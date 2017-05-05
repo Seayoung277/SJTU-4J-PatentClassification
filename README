@@ -1,0 +1,127 @@
+#######################################################################
+This is the README file of the project source code
+You can find all the information about how to run the codes here
+
+Author: Siyang Zhang, Wentao Dong
+#######################################################################
+
+1. Description
+  You should be able to find 7 folders in total. They are used for:
+	- liblinear-2.1		The LIBLINEAR library
+	- svm			The implementation of data pre-
+				processing, traditional SVM, M3-SVM
+				and M3-SVM multi-thread
+	- mlp_tf		The implementation of traditional MLP
+				and M3-MLP
+	- plain			To keep the data for traditional 
+				SVM training, traditional MLP 
+				training, and all the testing
+	- rand			To keep the data for random M3-SVM,
+				random M3-SVM-MP and random M3-MLP
+	- yc			To keep the data for yc M3-SVM,
+				yc M3-SVM-MP and yc M3-MLP
+	- model			To keep the SVM models (useless but 
+				necessary)
+
+2. Compiling
+  Only the programs in ./svm need to be compiled. Use 'make' to compile
+them all. You will get ./svm/data, ./svm/svm, ./svm/m3 and ./svm/m3mp
+  ./svm/data is used for data pre-processing
+  ./svm/svm is the traditional SVM classifier
+  ./svm/m3 is the Min-Max Modular SVM serial version
+  ./svm/msmp is the Min-Max Modular SVM parallel version
+
+  G++ 4.5.0 is recommended. Other versions may lead to problems
+  The latest TensorFlow should be properly installed
+
+3. Data Processing
+  Before running ./svm/data to pre-process the data, make sure all the
+paths below exist. If not, create the corresponding folders:
+	./plain
+	./rand/data
+	./yc/data
+	./model/rand
+	./model/yc
+
+  To generate testing data for all the classifiers:
+	./svm/data 0 test
+
+  To generate training data for traditional SVM:
+	./svm/data 0 train
+
+  To generate training data for random m3 classifiers(SVM & MLP):
+	./svm/data 1 SUBCLASS_SIZE(5000 in our experiment)
+  The pos class num and the neg class num will be returned,
+	which is useful in the training. 6 and 17 in our experiment
+
+  To generate training data for yc m3 classifiers(SVM & MLP):
+	./svm/data 2 SUBCLASS_SIZE(5000 in our experiment)
+  The pos class num and the neg class num will be returned,
+	which is useful in the training. 6 and 17 in our experiment
+
+  You can also use ./svm/data to check the usage guide
+  
+  ***Mention that you MUST run the dataprocessing program first
+  ***The submitted package doesn't contains processed data
+
+4. Traditional SVM
+  It's quite simple:
+	./svm/svm
+
+5. M3-SVM
+  To grid search the best threshod:
+	./svm/m3 rand(or yc) POS_SUBCLASS_NUM NEG_SUBCLASS_NUM grid
+  For rand, the best threshod is 15 and 2
+  For yc, the best threshod is 16 and 0
+  POS_SUBCLASS_NUM and NEG_SUBCLASS_NUM are returned while
+  data preprocessing, 6 and 17 in our experiment
+
+  To evaluate the result:
+	./svm/m3 rand(or yc) POS_SUBCLASS_NUM NEG_SUBCLASS_NUM eval
+  POS_SUBCLASS_NUM and NEG_SUBCLASS_NUM are returned while
+  data preprocessing, 6 and 17 in our experiment
+
+  You can also use ./svm/m3 to check the usage.
+
+6. M3-SVM multi-thread
+  Almost the same as M3-SVM. Just change ./svm/m3 into ./svm/m3mp
+
+7. Traditional MLP
+  It's quite simple:
+	python ./mlp_tf/mlp.py
+
+8. M3-MLP
+  Almost the same as M3-SVM. Just change ./svm/m3 into
+	python ./mlp_tf/m3mlp.py
+
+9. Spark-Liblinear
+  Hadoop 1.2.1 and Spark 1.0.0 is required
+  You have to use a Java JDK before 8u because of dependence issue.
+
+  Start your HDFS
+	$ ~/hadoop-1.2.1/bin/start-all.sh
+
+  Put your training data into HDFS
+	~$ hadoop fs -put ./svm_train svm_train 
+	~$ hadoop fs -ls
+
+  Verify success or not
+	>> Found 1 item 
+	>> -rw-r--r--   2 dongdongdoge dongdongdoge  27670 2017-04-30 14:07 /user/dongdongdoge/svm_train
+
+  Running Spark LIBLINEAR by Spark Shell
+	$ cd ~/spark-1.0.0-bin-hadoop1/ 
+	$ ./bin/spark-shell --jars "/home/dongdongdoge/spark/spark-liblinear-1.96/spark-liblinear-1.96.jar"
+
+  Import the classes of Spark LIBLINEAR.
+	scala> import tw.edu.ntu.csie.liblinear._
+
+  Load dataset to memory by API loadLibSVMData.
+	scala> val data = Utils.loadLibSVMData(sc, "hdfs://master:9000/user/dongdongdoge/svm_train")
+	scala> val model = SparkLiblinear.train(data, "-s 0 -c 1.0 -e 1e-2")
+
+  Run a Spark LIBLINEAR Predicting Task
+	scala> val LabelAndPreds = data.map { point =>
+  	val prediction = model.predict(point)
+  	(point.y, prediction)	
+	}
