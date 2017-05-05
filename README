@@ -35,8 +35,12 @@ them all. You will get ./svm/data, ./svm/svm, ./svm/m3 and ./svm/m3mp
   The latest TensorFlow should be properly installed
 
 3. Data Processing
+  The first step you should do is to extract the training data file
+  and the testing data file in ./svm with the following commands:
+  	cat train(or test)* > train(or test).tar.gz  
+	tar xzvf train(or test).tar.gz
   Before running ./svm/data to pre-process the data, make sure all the
-paths below exist. If not, create the corresponding folders:
+  paths below exist. If not, create the corresponding folders:
 	./plain
 	./rand/data
 	./yc/data
